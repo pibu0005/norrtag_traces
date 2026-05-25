@@ -1,0 +1,360 @@
+
+
+.traceApp {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  justify-content: stretch;
+  align-items: stretch;
+}
+
+.phone {
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(190deg, #93B1CD 0%, #E2DAD8 100%);
+  border-radius: 0;
+  position: relative;
+  overflow: hidden;
+  --trace-stage-scale: 0.8;
+  --trace-stage-shift-y: 40px;
+  /* Trace colors (edit these in CSS). */
+  --trace-fill: rgb(255, 255, 255);
+  --trace-fill-focused: #f9f9f9;
+  --trace-fill-context-trigger: #f9f9f9;
+  --trace-border: transparent;
+  --trace-border-focused: #ffffff;
+  --trace-border-context-trigger: #ffffff;
+}
+
+.phone::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: calc(40px + env(safe-area-inset-bottom));
+  pointer-events: none;
+  /* Fade bubbles into the permanent home-indicator area. */
+  background: linear-gradient(
+    to bottom,
+    rgba(226, 218, 216, 0) 0%,
+    rgba(226, 218, 216, 0.55) 55%,
+    rgba(226, 218, 216, 0.9) 78%,
+    rgba(226, 218, 216, 1) 100%
+  );
+  z-index: 8;
+}
+
+.gridPan {
+  position: absolute;
+  inset: 0;
+  touch-action: none;
+  will-change: transform;
+  z-index: 1;
+}
+
+.traceStage {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+}
+
+/* Only scale the visuals, not the draggable surface (keeps pan feeling smooth at any scale). */
+.traceStageInner {
+  position: absolute;
+  inset: 0;
+  transform: translateY(var(--trace-stage-shift-y)) scale(var(--trace-stage-scale));
+  transform-origin: 50% 62%;
+}
+
+.traceStageOverlay {
+  pointer-events: none;
+  z-index: 2;
+}
+
+.traceBubbleWrap {
+  position: absolute;
+  will-change: transform;
+}
+
+.traceBubble {
+  position: relative;
+  border-radius: 999px;
+  border: 3px solid transparent;
+  will-change: transform, opacity;
+  color: #ffffff;
+  transition: background-color 250ms ease, border-color 250ms ease;
+}
+
+.traceTypeSymbol {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  padding: 10%;
+  box-sizing: border-box;
+  object-fit: contain;
+  pointer-events: none;
+  user-select: none;
+}
+
+/* Fixed “inspection slot” — a target the grid snaps into. */
+
+
+.focusFab {
+  position: absolute;
+  right: 27px;
+  bottom: 27px;
+  width: 68px;
+  height: 68px;
+  border-radius: 999px;
+  border: 2px solid #ececec;
+  background: #ffffff;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  z-index: 12;
+  pointer-events: auto;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+
+}
+
+.focusFabIcon {
+  width: 28px;
+  height: 28px;
+  display: block;
+  pointer-events: none;
+  opacity: 0.92;
+}
+
+.leaveFab {
+  position: absolute;
+  left: 27px;
+  bottom: 27px;
+  width: 68px;
+  height: 68px;
+  border-radius: 999px;
+  border: 2px solid #ececec;
+  background: #ffffff;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  z-index: 12;
+  pointer-events: auto;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.leaveFabIcon {
+  width: 28px;
+  height: 28px;
+  display: block;
+  pointer-events: none;
+}
+
+.focusFab:active {
+  transform: scale(0.98);
+}
+
+.focusFab:focus-visible {
+  outline: 3px solid #ffffff;
+  outline-offset: 3px;
+}
+
+.leaveFab:active {
+  transform: scale(0.98);
+}
+
+.leaveFab:focus-visible {
+  outline: 3px solid #ffffff;
+  outline-offset: 3px;
+}
+
+
+
+.traceApp,
+.phone {
+  touch-action: none;
+}
+
+.topBar {
+  position: absolute;
+  left: calc(16px + env(safe-area-inset-left));
+  right: calc(16px + env(safe-area-inset-right));
+  top: calc(10px + env(safe-area-inset-top));
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  z-index: 11;
+  pointer-events: auto;
+  user-select: none;
+  cursor: pointer;
+}
+
+.placeBlock {
+  min-width: 0;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+.place {
+  font-family: var(--sans);
+  line-height: 1.02;
+  letter-spacing: -0.6px;
+  color: #ffffff;
+  font-weight: 500;
+}
+
+.subtitle {
+  font-family: var(--sans);
+  font-size: 14px;
+  line-height: 0.9;
+  color: #D9E2EB;
+  font-weight: 400;
+}
+
+.subtitleInline {
+  margin-top: 0;
+}
+
+.quoteArea {
+  position: absolute;
+  left: 50%;
+  top: calc(8% + env(safe-area-inset-top));
+  width: min(326px, calc(100vw - 72px));
+  height: 306px;
+  transform: translateX(-50%);
+  display: grid;
+  place-items: center;
+  z-index: 10;
+  pointer-events: none;
+  user-select: none;
+}
+
+.quoteStack {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
+.quoteCard {
+  position: absolute;
+  inset: 0;
+  background: #ffffff;
+  border-radius: 16px;
+}
+
+.quoteCardBack {
+  box-shadow:
+    0 10px 28px rgba(0, 0, 0, 0.02),
+    0 20px 30px rgba(0, 0, 0, 0.02);
+  opacity: 0.95;
+}
+
+.quoteCardBack1 {
+  transform: translate(0px, 0px) rotate(7deg);
+}
+
+
+
+
+.quoteCardFront {
+  box-shadow:
+  0 10px 20px rgba(0, 0, 0, 0.01),
+  0 10px 50px rgba(0, 0, 0, 0.04);
+  padding: 22px 22px 24px;
+  box-sizing: border-box;
+}
+
+.quoteCardContent {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.quoteCardHeader {
+  margin-top: 16px;
+}
+
+.quoteCardTitle {
+  font-family: var(--sans);
+  font-weight: 500;
+  font-size: 22px;
+  line-height: 1.05;
+  letter-spacing: -0.6px;
+  color: #0b0b0c;
+}
+
+.quoteCardMeta {
+  margin-top: 2px;
+  font-family: var(--sans);
+  font-size: 14px;
+  color: rgba(24, 24, 24, 0.5);
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.quoteCardBody {
+  margin-top: 16px;
+  font-family: var(--serif);
+  font-weight: 200;
+  font-size: 16px;
+  line-height: 1.18;
+  color: #151515;
+  text-align: left;
+  overflow: hidden;
+  padding-bottom: 6px;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+}
+
+.quoteCardBodyRich {
+  display: flex;
+  flex: 1;
+  -webkit-box-orient: unset;
+}
+
+.quoteCardMedia {
+  width: 100%;
+  height: 100%;
+  flex: 1;
+  border-radius: 8px;
+  object-fit: cover;
+  transform: translateY(5px);
+}
+
+.quoteCardAudio {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 100%;
+  height: 100%;
+}
+
+.quoteCardAudioMedia {
+  width: 100%;
+  height: auto;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.35);
+  object-fit: contain;
+  display: block;
+}
+
+.quoteCardAudioText {
+  font-family: var(--serif);
+  font-weight: 200;
+  font-size: 16px;
+  line-height: 1.2;
+  color: rgba(21, 21, 21, 0.9);
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
+  -webkit-overflow-scrolling: touch;
+  padding-bottom: 10px;
+}
