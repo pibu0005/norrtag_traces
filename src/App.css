@@ -128,6 +128,183 @@
   opacity: 0.92;
 }
 
+.traceComposerShell {
+  position: absolute;
+  inset: 0;
+  z-index: 30;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  padding-top: calc(8% + env(safe-area-inset-top));
+  pointer-events: auto;
+  background: rgba(147, 177, 205, 0.08);
+  backdrop-filter: blur(2px);
+}
+
+.traceComposerCard {
+  width: min(306px, calc(100vw - 72px));
+  min-height: 306px;
+  box-sizing: border-box;
+  border-radius: 18px;
+  padding: 22px;
+  background:
+    radial-gradient(circle at 50% 0%, rgba(255, 246, 226, 0.92), rgba(255, 255, 255, 0) 46%),
+    rgba(255, 255, 255, 0.96);
+  box-shadow:
+    0 14px 26px rgba(0, 0, 0, 0.04),
+    0 34px 70px rgba(0, 0, 0, 0.08);
+  font-family: var(--sans);
+  color: #101011;
+}
+
+.traceComposerHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+}
+
+.traceComposerEyebrow {
+  font-size: 22px;
+  line-height: 1;
+  font-weight: 500;
+  letter-spacing: -0.6px;
+}
+
+.traceComposerPlace {
+  max-width: 116px;
+  font-size: 12px;
+  line-height: 1.05;
+  color: rgba(16, 16, 17, 0.42);
+  text-align: right;
+}
+
+.traceComposerModeSwitch {
+  margin-top: 18px;
+  padding: 4px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px;
+  border-radius: 999px;
+  background: rgba(16, 16, 17, 0.06);
+}
+
+.traceComposerMode {
+  appearance: none;
+  border: 0;
+  border-radius: 999px;
+  padding: 9px 12px;
+  background: transparent;
+  font: inherit;
+  font-size: 14px;
+  color: rgba(16, 16, 17, 0.54);
+  cursor: pointer;
+}
+
+.traceComposerMode.isActive {
+  background: #ffffff;
+  color: #101011;
+  box-shadow: 0 5px 16px rgba(0, 0, 0, 0.05);
+}
+
+.traceComposerInputPanel {
+  margin-top: 16px;
+  overflow: hidden;
+  border-radius: 16px;
+  background: #fff5df;
+}
+
+.traceComposerTextarea {
+  width: 100%;
+  min-height: 134px;
+  padding: 17px;
+  border: 0;
+  outline: 0;
+  resize: none;
+  box-sizing: border-box;
+  background: transparent;
+  font-family: var(--serif);
+  font-size: 18px;
+  line-height: 1.22;
+  color: #151515;
+}
+
+.traceComposerTextarea::placeholder {
+  color: rgba(21, 21, 21, 0.34);
+}
+
+.traceComposerCount {
+  padding: 0 16px 13px;
+  font-size: 12px;
+  color: rgba(16, 16, 17, 0.36);
+  text-align: right;
+}
+
+.traceComposerFileInput {
+  display: none;
+}
+
+.traceComposerImagePick {
+  width: 100%;
+  min-height: 154px;
+  border: 0;
+  border-radius: inherit;
+  background: #fff5df;
+  color: rgba(16, 16, 17, 0.48);
+  font: inherit;
+  font-size: 16px;
+  cursor: pointer;
+  overflow: hidden;
+}
+
+.traceComposerImagePick img {
+  width: 100%;
+  height: 188px;
+  display: block;
+  object-fit: cover;
+}
+
+.traceComposerError {
+  margin-top: 10px;
+  font-size: 12px;
+  color: #c46b00;
+}
+
+.traceComposerActions {
+  margin-top: 18px;
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.traceComposerCancel,
+.traceComposerConfirm {
+  appearance: none;
+  border: 0;
+  border-radius: 999px;
+  padding: 11px 15px;
+  font: inherit;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.traceComposerCancel {
+  background: rgba(16, 16, 17, 0.06);
+  color: rgba(16, 16, 17, 0.62);
+}
+
+.traceComposerConfirm {
+  background: #ffa000;
+  color: #ffffff;
+  box-shadow: 0 10px 22px rgba(255, 160, 0, 0.25);
+}
+
+.traceComposerConfirm:disabled {
+  opacity: 0.45;
+  cursor: default;
+  box-shadow: none;
+}
+
 .leaveFab {
   position: absolute;
   left: 27px;
@@ -225,8 +402,9 @@
   position: absolute;
   left: 50%;
   top: calc(8% + env(safe-area-inset-top));
-  width: min(326px, calc(100vw - 72px));
-  height: 306px;
+  --quote-card-size: min(306px, calc(100vw - 72px));
+  width: var(--quote-card-size);
+  height: var(--quote-card-size);
   transform: translateX(-50%);
   display: grid;
   place-items: center;
@@ -269,6 +447,19 @@
   padding: 22px 22px 24px;
   box-sizing: border-box;
 }
+
+.quoteCardFrontCoupon,
+.quoteCardFrontAudio {
+  padding: 0;
+  overflow: hidden;
+}
+
+.quoteCardFrontCoupon .quoteCardContent,
+.quoteCardFrontAudio .quoteCardContent {
+  overflow: hidden;
+  border-radius: inherit;
+}
+
 
 .quoteCardContent {
   height: 100%;
@@ -317,6 +508,7 @@
 .quoteCardBodyRich {
   display: flex;
   flex: 1;
+  min-height: 0;
   -webkit-box-orient: unset;
 }
 
@@ -324,37 +516,84 @@
   width: 100%;
   height: 100%;
   flex: 1;
-  border-radius: 8px;
+  border-radius: 10px;
   object-fit: cover;
-  transform: translateY(5px);
-}
-
-.quoteCardAudio {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  width: 100%;
-  height: 100%;
-}
-
-.quoteCardAudioMedia {
-  width: 100%;
-  height: auto;
-  border-radius: 12px;
-  background: rgba(255, 255, 255, 0.35);
-  object-fit: contain;
   display: block;
 }
 
-.quoteCardAudioText {
-  font-family: var(--serif);
-  font-weight: 200;
-  font-size: 16px;
-  line-height: 1.2;
-  color: rgba(21, 21, 21, 0.9);
-  flex: 1 1 auto;
-  min-height: 0;
-  overflow: auto;
-  -webkit-overflow-scrolling: touch;
-  padding-bottom: 10px;
+.quoteCardImageFrame {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  border-radius: 10px;
+  background: #f6f4ef;
+}
+
+.quoteCardImageFrame .quoteCardMedia {
+  transform: none;
+}
+
+.quoteCardImageOverlay {
+  position: absolute;
+  inset: auto 0 0 0;
+  padding: 74px 22px 24px;
+  border-radius: 0 0 10px 10px;
+  background: linear-gradient(
+    180deg,
+    rgba(0, 0, 0, 0) 0%,
+    rgba(0, 0, 0, 0.58) 100%
+  );
+  color: #ffffff;
+  pointer-events: none;
+}
+
+.quoteCardImageTitle {
+  font-family: var(--sans);
+  font-size: 28px;
+  line-height: 1;
+  font-weight: 500;
+  letter-spacing: 0;
+}
+
+.quoteCardImageDate {
+  margin-top: 8px;
+  font-family: var(--sans);
+  font-size: 17px;
+  line-height: 1;
+  font-weight: 400;
+  letter-spacing: 0;
+  color: rgba(255, 255, 255, 0.72);
+}
+
+.quoteCardImageStamp {
+  position: absolute;
+  right: -14px;
+  bottom: -14px;
+  width: 84px;
+  height: 84px;
+  object-fit: cover;
+  display: block;
+  z-index: 4;
+  pointer-events: none;
+}
+
+.quoteCardCouponFrame {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  border-radius: 16px;
+  background: #f6f4ef;
+}
+
+.quoteCardCouponMedia,
+.quoteCardAudioFullMedia {
+  width: 100%;
+  height: 100%;
+  border-radius: 0;
+  object-fit: cover;
+  display: block;
+  transform: scale(1.24);
+  transform-origin: center;
 }

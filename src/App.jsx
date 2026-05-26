@@ -3,16 +3,18 @@ import { AnimatePresence, animate, motion, useMotionValue, useMotionValueEvent }
 import './App.css'
 import plusIcon from './assets/plus.svg'
 import leaveIcon from './assets/leave.svg'
+import imageTraceStamp from './assets/corner.png'
 import imgMidsommar from './assets/img/midsommar.png'
 import imgBand from './assets/img/band.png'
 import imgGoahti from './assets/img/goahti.png'
 import imgTrain1 from './assets/img/train1.png'
 import imgTrain2 from './assets/img/train2.png'
 import imgTrain3 from './assets/img/train3.png'
-import imgHelena from './assets/img/helena.png'
-import imgAudio1 from './assets/img/audio1.png'
-import imgAudio2 from './assets/img/audio2.png'
-import imgAudio3 from './assets/img/audio3.png'
+import imgAudioGoahti from './assets/img/audio_Goahti.jpg'
+import imgAudioHelena from './assets/img/audio_Helena.jpg'
+import imgAudioUme from './assets/img/audio_Ume.jpg'
+import imgMuseumCoupon from './assets/img/museum_coupon.jpg'
+import imgTrainCoupon from './assets/img/train_coupon.jpg'
 import symTravellerText from './assets/img/traces_symbols/traveller_text.png'
 import symTravellerImage from './assets/img/traces_symbols/traveller_image.png'
 import symTravellerAudio from './assets/img/traces_symbols/traveller_audio.png'
@@ -93,6 +95,17 @@ const TRACE_PLACES = ['train', 'museum']
 const FIXED_PLACE = 'Gammlia Friluftmuseum'
 const FIXED_TRAIN_PLACE = 'Norrtag  7104'
 
+// Toggle for the front-end-only trace composer.
+const ENABLE_ADD_TRACE_FEATURE = true
+// "active" means new traces inherit the currently visible place filter.
+const CUSTOM_TRACE_DEFAULT_PLACE = 'active'
+// Keep user notes small enough to feel like traces, not posts.
+const CUSTOM_TRACE_MAX_TEXT_LENGTH = 220
+// File input accepts only these browser-previewable image types.
+const CUSTOM_TRACE_ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif']
+// Prototype persistence stays off by default because uploaded images use temporary object URLs.
+const ENABLE_CUSTOM_TRACE_PERSISTENCE = false
+
 const AXIAL_DIRS = [
   { q: 1, r: 0 },
   { q: 1, r: -1 },
@@ -119,20 +132,20 @@ const CONTEXTUAL_TRACE_CUES = {
       { traceId: 't30', anchorId: 't6' },
       { traceId: 't33', anchorId: 't34' },
     ],
-    firstDelayMs: 2000,
+    firstDelayMs: 4000,
     stepDelayMs: 1000,
     affectAll: true,
     // Keep the whole field floating until the *last* contextual trace arrives.
     holdFloatingUntilEnd: true,
   },
   train: {
-    triggerId: 't11',
+    triggerId: 't12',
     sequence: [
       { traceId: 't2', anchorId: 't1' },
       { traceId: 't7', anchorId: 't18' }
       
     ],
-    firstDelayMs: 2000,
+    firstDelayMs: 4000,
     stepDelayMs: 5000,
     affectAll: true,
   },
@@ -357,7 +370,7 @@ function buildTraces() {
         'Audio: next stop in a few minutes. If you look right now, the river bends back on itself and the roofs start to thin out.',
       date: '19.08.25',
       type: 'audio',
-      mediaSrc: imgAudio1,
+      mediaSrc: imgAudioUme,
       place: 'train',
       origin: 'partner',
     },
@@ -388,7 +401,7 @@ function buildTraces() {
         'Originally built in the countryside around Umeå, this church was later moved to Gammlia to preserve its history.',
       date: '08.03.28',
       type: 'audio',
-      mediaSrc: imgHelena,
+      mediaSrc: imgAudioHelena,
       place: 'museum',
       origin: 'partner',
     },
@@ -469,7 +482,7 @@ function buildTraces() {
         'Audio: look out to the left—water and forest trade places here. The land is still lifting itself up, slowly, like it remembers the ice.',
       date: '07.04.28',
       type: 'audio',
-      mediaSrc: imgAudio2,
+      mediaSrc: imgAudioUme,
       place: 'train',
       origin: 'partner',
     },
@@ -591,7 +604,7 @@ function buildTraces() {
         'A traditional Sámi shelter designed to withstand the harsh climate of northern Scandinavia.',
       date: '25.02.28',
       type: 'audio',
-      mediaSrc: imgAudio3,
+      mediaSrc: imgAudioGoahti,
       place: 'museum',
       origin: 'partner',
     },
@@ -768,9 +781,215 @@ function buildTraces() {
   })
 }
 
+const resolveCustomTracePlace = (activePlace) => {
+  if (CUSTOM_TRACE_DEFAULT_PLACE === 'active') return activePlace
+  return TRACE_PLACES.includes(CUSTOM_TRACE_DEFAULT_PLACE)
+    ? CUSTOM_TRACE_DEFAULT_PLACE
+    : activePlace
+}
+
+function AddTraceButton({ onClick }) {
+  if (!ENABLE_ADD_TRACE_FEATURE) return null
+
+  return (
+    <button
+      type="button"
+      className="focusFab addTraceFab"
+      aria-label="Leave a new trace"
+      onPointerDown={(e) => e.stopPropagation()}
+      onClick={onClick}
+    >
+      <img className="focusFabIcon" src={plusIcon} alt="" aria-hidden="true" />
+    </button>
+  )
+}
+
+function TraceComposer({ placeLabel, onCancel, onConfirm }) {
+  const [mode, setMode] = useState('text')
+  const [text, setText] = useState('')
+  const [imagePreviewUrl, setImagePreviewUrl] = useState('')
+  const [error, setError] = useState('')
+  const textareaRef = useRef(null)
+  const imageInputRef = useRef(null)
+
+  const allowedImageTypes = CUSTOM_TRACE_ALLOWED_IMAGE_TYPES.join(',')
+  const canConfirm =
+    mode === 'text'
+      ? text.trim().length > 0
+      : Boolean(imagePreviewUrl)
+
+  useEffect(() => {
+    if (mode !== 'text') return
+    const id = window.requestAnimationFrame(() => textareaRef.current?.focus())
+    return () => window.cancelAnimationFrame(id)
+  }, [mode])
+
+  const clearImagePreview = () => {
+    if (imagePreviewUrl) URL.revokeObjectURL(imagePreviewUrl)
+    setImagePreviewUrl('')
+  }
+
+  const chooseMode = (nextMode) => {
+    if (nextMode !== 'image') clearImagePreview()
+    setMode(nextMode)
+    setError('')
+  }
+
+  const handleImageChange = (event) => {
+    const file = event.target.files?.[0]
+    if (!file) return
+
+    if (!CUSTOM_TRACE_ALLOWED_IMAGE_TYPES.includes(file.type)) {
+      setError('Choose a JPG, PNG, WebP, or GIF image.')
+      event.target.value = ''
+      return
+    }
+
+    clearImagePreview()
+    setImagePreviewUrl(URL.createObjectURL(file))
+    setError('')
+  }
+
+  const handleCancel = () => {
+    clearImagePreview()
+    onCancel()
+  }
+
+  const handleConfirm = () => {
+    if (!canConfirm) {
+      setError(mode === 'text' ? 'Write a small trace first.' : 'Choose an image first.')
+      return
+    }
+
+    if (mode === 'text') clearImagePreview()
+    onConfirm({
+      type: mode,
+      text: text.trim(),
+      imageUrl: imagePreviewUrl,
+    })
+  }
+
+  return (
+    <motion.div
+      className="traceComposerShell"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      transition={{ duration: 0.22 }}
+      onPointerDown={(e) => e.stopPropagation()}
+    >
+      <motion.div
+        className="traceComposerCard"
+        initial={{ y: 24, scale: 0.96, rotate: -1 }}
+        animate={{ y: 0, scale: 1, rotate: 0 }}
+        exit={{ y: 18, scale: 0.97, opacity: 0 }}
+        transition={{ type: 'spring', stiffness: 260, damping: 28, mass: 0.9 }}
+      >
+        <div className="traceComposerHeader">
+          <span className="traceComposerEyebrow">Leave a trace</span>
+          <span className="traceComposerPlace">{placeLabel}</span>
+        </div>
+
+        <div className="traceComposerModeSwitch" role="tablist" aria-label="Trace type">
+          <button
+            type="button"
+            className={mode === 'text' ? 'traceComposerMode isActive' : 'traceComposerMode'}
+            onClick={() => chooseMode('text')}
+          >
+            Text
+          </button>
+          <button
+            type="button"
+            className={mode === 'image' ? 'traceComposerMode isActive' : 'traceComposerMode'}
+            onClick={() => chooseMode('image')}
+          >
+            Image
+          </button>
+        </div>
+
+        <AnimatePresence mode="wait" initial={false}>
+          {mode === 'text' ? (
+            <motion.div
+              key="text"
+              className="traceComposerInputPanel"
+              initial={{ height: 92, opacity: 0, y: 10 }}
+              animate={{ height: 'auto', opacity: 1, y: 0 }}
+              exit={{ height: 92, opacity: 0, y: -8 }}
+              transition={{ duration: 0.24, ease: [0.22, 1, 0.36, 1] }}
+            >
+              <textarea
+                ref={textareaRef}
+                className="traceComposerTextarea"
+                value={text}
+                maxLength={CUSTOM_TRACE_MAX_TEXT_LENGTH}
+                placeholder="Leave a trace..."
+                onChange={(event) => {
+                  setText(event.target.value)
+                  setError('')
+                }}
+              />
+              <div className="traceComposerCount">
+                {text.length}/{CUSTOM_TRACE_MAX_TEXT_LENGTH}
+              </div>
+            </motion.div>
+          ) : (
+            <motion.div
+              key="image"
+              className="traceComposerInputPanel"
+              initial={{ height: 92, opacity: 0, y: 10 }}
+              animate={{ height: 'auto', opacity: 1, y: 0 }}
+              exit={{ height: 92, opacity: 0, y: -8 }}
+              transition={{ duration: 0.24, ease: [0.22, 1, 0.36, 1] }}
+            >
+              <input
+                ref={imageInputRef}
+                className="traceComposerFileInput"
+                type="file"
+                accept={allowedImageTypes}
+                onChange={handleImageChange}
+              />
+              <button
+                type="button"
+                className={imagePreviewUrl ? 'traceComposerImagePick hasImage' : 'traceComposerImagePick'}
+                onClick={() => imageInputRef.current?.click()}
+              >
+                {imagePreviewUrl ? (
+                  <img src={imagePreviewUrl} alt="" draggable={false} />
+                ) : (
+                  <span>Choose an image</span>
+                )}
+              </button>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {error ? <div className="traceComposerError">{error}</div> : null}
+
+        <div className="traceComposerActions">
+          <button type="button" className="traceComposerCancel" onClick={handleCancel}>
+            Cancel
+          </button>
+          <button
+            type="button"
+            className="traceComposerConfirm"
+            disabled={!canConfirm}
+            onClick={handleConfirm}
+          >
+            Add trace
+          </button>
+        </div>
+      </motion.div>
+    </motion.div>
+  )
+}
+
 function App() {
-  const allTraces = useMemo(() => buildTraces(), [])
+  const [allTraces, setAllTraces] = useState(() => buildTraces())
   const [activeTracePlace, setActiveTracePlace] = useState('train')
+  const [isComposerOpen, setIsComposerOpen] = useState(false)
+  const pendingAddedTraceIdRef = useRef(null)
+  const addTraceSettleTimerRef = useRef(0)
+  const customImageUrlsRef = useRef(new Set())
   const traces = useMemo(() => {
     const filtered = allTraces.filter((t) => t.place === activeTracePlace)
     return packTracesIntoCenterSlots(filtered)
@@ -869,6 +1088,44 @@ function App() {
   // Ensure we start with a centered surface (first trace in the slot).
   useEffect(() => {
     if (!traces.length) return
+
+    const pendingAddedTraceId = pendingAddedTraceIdRef.current
+    const addedTrace = pendingAddedTraceId
+      ? traces.find((t) => t.id === pendingAddedTraceId)
+      : null
+
+    if (addedTrace) {
+      pendingAddedTraceIdRef.current = null
+      if (addTraceSettleTimerRef.current) window.clearTimeout(addTraceSettleTimerRef.current)
+      for (const animation of snapAnimationsRef.current) animation?.stop?.()
+
+      const nextSlots = new Map(traces.map((t) => [t.id, { q: t.gridX, r: t.gridY }]))
+      slotByIdRef.current = nextSlots
+      setSlotById(nextSlots)
+
+      const targetPx = axialToPx(addedTrace.gridX, addedTrace.gridY)
+      setReslotPhase('settle')
+      setNudgeById(new Map([[addedTrace.id, { x: -targetPx.x, y: -targetPx.y - 70 }]]))
+      setLockedId(addedTrace.id)
+      setIsSnapping(true)
+
+      // The trace is appended to the same source list as all demo traces, then
+      // nudged from the center and snapped into focus so it feels absorbed by the field.
+      const ax = animate(panX, -stageScale * addedTrace.px, PAN_SNAP_SPRING)
+      const ay = animate(panY, -stageScale * addedTrace.py, PAN_SNAP_SPRING)
+      snapAnimationsRef.current = [ax, ay]
+
+      Promise.all([ax.finished, ay.finished])
+        .catch(() => {})
+        .finally(() => setIsSnapping(false))
+
+      addTraceSettleTimerRef.current = window.setTimeout(() => {
+        setNudgeById(new Map())
+        setReslotPhase('idle')
+      }, RESLOT_ANIM.SETTLE_MS)
+      return
+    }
+
     // Use the initial (static) positions so contextual re-layouts don't re-center the pan.
     panX.set(-traces[0].px)
     panY.set(-traces[0].py)
@@ -923,9 +1180,12 @@ function App() {
   }, [renderPan.x, renderPan.y, stageScale, tracesWithPos])
 
   useEffect(() => {
+    const customImageUrls = customImageUrlsRef.current
     return () => {
       if (rafRef.current) window.cancelAnimationFrame(rafRef.current)
       if (fluidRafRef.current) window.cancelAnimationFrame(fluidRafRef.current)
+      if (addTraceSettleTimerRef.current) window.clearTimeout(addTraceSettleTimerRef.current)
+      for (const imageUrl of customImageUrls) URL.revokeObjectURL(imageUrl)
     }
   }, [])
 
@@ -1672,14 +1932,66 @@ function App() {
     focusTrace(pool[idx].id)
   }, [activeId, focusTrace, slotById, traceById, traces])
 
+  const openTraceComposer = useCallback(() => {
+    if (!ENABLE_ADD_TRACE_FEATURE) return
+    clearContextualCueTimers()
+    setIsComposerOpen(true)
+  }, [clearContextualCueTimers])
+
+  const closeTraceComposer = useCallback(() => {
+    setIsComposerOpen(false)
+  }, [])
+
+  const createUserTrace = useCallback(({ type, text, imageUrl }) => {
+    const id = `custom-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
+    const createdAt = new Date().toISOString()
+    const jitter = traceJitter(id)
+    const place = resolveCustomTracePlace(activeTracePlace)
+
+    // Custom traces use the same shape as the built-in trace library so the
+    // existing filter, pack, focus, and animation pipeline can own the rest.
+    const trace = {
+      id,
+      name: 'You',
+      quote: type === 'text' ? text : 'A trace left on the journey.',
+      date: createdAt,
+      type,
+      mediaSrc: type === 'image' ? imageUrl : undefined,
+      place,
+      origin: 'travellers',
+      createdByUser: true,
+      createdAt,
+      subtitle: undefined,
+      relevanceRank: 999,
+      gridX: 0,
+      gridY: 0,
+      jitterX: jitter.x,
+      jitterY: jitter.y,
+      px: jitter.x,
+      py: jitter.y,
+    }
+
+    if (type === 'image' && imageUrl) customImageUrlsRef.current.add(imageUrl)
+    pendingAddedTraceIdRef.current = id
+    setAllTraces((currentTraces) => [...currentTraces, trace])
+    setIsComposerOpen(false)
+
+    if (ENABLE_CUSTOM_TRACE_PERSISTENCE) {
+      // Persistence is intentionally left disabled for this prototype because
+      // uploaded image object URLs are session-scoped. Text traces can be wired here later.
+    }
+  }, [activeTracePlace])
+
   // Expose an imperative trigger for prototyping:
   //   window.focusTrace("t17")
   useEffect(() => {
     window.focusTrace = (id) => focusTrace(id)
+    window.triggerContextFocus = () => triggerContextFocus()
     return () => {
       delete window.focusTrace
+      delete window.triggerContextFocus
     }
-  }, [focusTrace])
+  }, [focusTrace, triggerContextFocus])
 
   // Prototype switch for the two shoot locations:
   //   window.setTracePlace("train")
@@ -1766,7 +2078,15 @@ function App() {
             <AnimatePresence initial={false}>
               <motion.div
                 key={activeId ?? 'empty'}
-                className="quoteCard quoteCardFront"
+                className={
+                  active?.type === 'image'
+                    ? 'quoteCard quoteCardFront quoteCardFrontImage'
+                    : active?.type === 'audio'
+                      ? 'quoteCard quoteCardFront quoteCardFrontAudio'
+                    : active?.type === 'coupon'
+                      ? 'quoteCard quoteCardFront quoteCardFrontCoupon'
+                      : 'quoteCard quoteCardFront'
+                }
                 style={{ zIndex: 2 }}
                 initial={{
                   opacity: 1,
@@ -1787,6 +2107,15 @@ function App() {
                   ease: CARD_STACK_ANIM.EASE,
                 }}
               >
+                {active?.type === 'image' ? (
+                  <img
+                    className="quoteCardImageStamp"
+                    src={imageTraceStamp}
+                    alt=""
+                    draggable={false}
+                  />
+                ) : null}
+
                 <motion.div
                   className="quoteCardContent"
                   initial={{ opacity: 0, y: CARD_STACK_ANIM.CONTENT_FADE_Y }}
@@ -1798,53 +2127,70 @@ function App() {
                     delay: CARD_STACK_ANIM.CONTENT_FADE_DELAY,
                   }}
                 >
-                  <div className="quoteCardHeader">
-                    <div className="quoteCardTitle">{quoteTitle}</div>
-                    <div className="quoteCardMeta">
-                      <span className="quoteCardDate">{quoteDate}</span>
-                    </div>
-                  </div>
-
-                  <div
-                    className={
-                      active?.type === 'image' || active?.type === 'audio'
-                        ? 'quoteCardBody quoteCardBodyRich'
-                        : 'quoteCardBody'
-                    }
-                  >
-                    {active?.type === 'image' ? (
-                      <img
-                        className="quoteCardMedia"
-                        src={active.mediaSrc}
-                        alt=""
-                        draggable={false}
-                      />
-                    ) : active?.type === 'audio' ? (
-                      <div className="quoteCardAudio">
+                  {active?.type === 'image' ? (
+                    <>
+                      <div className="quoteCardImageFrame">
                         <img
-                          className="quoteCardAudioMedia"
+                          className="quoteCardMedia"
                           src={active.mediaSrc}
                           alt=""
                           draggable={false}
                         />
-                        <div className="quoteCardAudioText">{quote}</div>
+                        <div className="quoteCardImageOverlay">
+                          <div className="quoteCardImageTitle">{quoteTitle}</div>
+                          <div className="quoteCardImageDate">{quoteDate}</div>
+                        </div>
                       </div>
-                    ) : (
-                      quote
-                    )}
-                  </div>
+                    </>
+                  ) : active?.type === 'coupon' ? (
+                   
+                      <img
+                        className="quoteCardCouponMedia"
+                        src={active.place === 'museum' ? imgMuseumCoupon : imgTrainCoupon}
+                        alt=""
+                        draggable={false}
+                      />
+                  ) : active?.type === 'audio' ? (
+                    <img
+                      className="quoteCardAudioFullMedia"
+                      src={active.mediaSrc}
+                      alt=""
+                      draggable={false}
+                    />
+                  ) : (
+                    <>
+                      <div className="quoteCardHeader">
+                        <div className="quoteCardTitle">{quoteTitle}</div>
+                        <div className="quoteCardMeta">
+                          <span className="quoteCardDate">{quoteDate}</span>
+                        </div>
+                      </div>
+
+                      <div className="quoteCardBody">{quote}</div>
+                    </>
+                  )}
                 </motion.div>
               </motion.div>
             </AnimatePresence>
           </div>
         </main>
 
+        <AnimatePresence>
+          {isComposerOpen ? (
+            <TraceComposer
+              placeLabel={topTitle}
+              onCancel={closeTraceComposer}
+              onConfirm={createUserTrace}
+            />
+          ) : null}
+        </AnimatePresence>
+
         {/* Interactive stage: visually scaled, but drag physics remain 1:1 (no scaled drag target). */}
         <div className="traceStage">
           {/* Full-screen interactive surface (the grid pans as one surface). */}
           <motion.div
             className="gridPan"
-            drag={!isSnapping && !isReslotting}
+            drag={!isComposerOpen && !isSnapping && !isReslotting}
             dragMomentum={false}
             dragElastic={0.08}
             style={{ x: panX, y: panY }}
@@ -1957,18 +2303,16 @@ function App() {
 
         
 
-        <button
-          type="button"
-          className="focusFab"
-          aria-label="Trigger contextual focus"
-          onPointerDown={(e) => e.stopPropagation()}
+        <AddTraceButton
           onClick={(e) => {
             e.stopPropagation()
-            triggerContextFocus()
+            if (e.shiftKey) {
+              triggerContextFocus()
+              return
+            }
+            openTraceComposer()
           }}
-        >
-          <img className="focusFabIcon" src={plusIcon} alt="" aria-hidden="true" />
-        </button>
+        />
 
         <button
           type="button"
